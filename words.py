@@ -3,9 +3,16 @@
 from random import randint
 
 WORDS_DIC_SUBJ_THIRDA = ['Apple','Ken','Banana','Jvvg','Everybody','Kaj','ST','She','He','The dog','Scratch Cat','Pico','Nano','Giga','Tera','Gobo','TemplatesFTW']
-WORDS_FIRST = "You"
-WORDS_SECOND="I"
-WORDS_DIC_SUBJ_THIRDM = ['They','The dogs', 'The cats','My bags','The bots','Scratchers','People']
+WORDS_FIRST="I"
+WORDS_DIC_SUBJ_THIRDM = ['They','The dogs', 'The cats','My bags','The bots','Scratchers','People','You']
+
+WORDS_SUBJ = []
+for i in WORDS_DIC_SUBJ_THIRDA:
+    WORDS_SUBJ.append(i)
+for i in WORDS_DIC_SUBJ_THIRDM:
+    WORDS_SUBJ.append(i)
+WORDS_SUBJ.append(WORDS_FIRST)
+
 
 WORDS_VERB = [
     {"name":"begin","third":"begins","past":"begun"},
@@ -74,3 +81,26 @@ WORDS_WHEN_NOW = ["every Wednesday","every Tuesday","every Monday","every Saturd
 WORDS_WHEN_PAST = ["then","yesterday","last night","last Wednesday","last Tuesday","last Monday","last Saturday","last Sunday","last Thursday","last Friday",]
 
 def generate():
+    subj = WORDS_SUBJ[randint(0,len(WORDS_SUBJ)-1)]
+    verbdict = WORDS_VERB[randint(0,len(WORDS_VERB)-1)]
+    if subj == WORDS_FIRST or subj in WORDS_DIC_SUBJ_THIRDM :
+        verb = verbdict["name"]
+    else:
+        verb = verbdict["third"]
+    obj = WORDS_NOUN[randint(0,int(WORDS_NOUN)-1)]
+    if not randint(0,2):
+        how = WORDS_HOW[randint(0,len(WORDS_HOW)-1)]
+    else:
+        how = ""
+    if randint(0,1):
+        verb = verbdict["past"]
+        when = WORDS_WHEN_PAST[randint(0,len(WORDS_WHEN_PAST)-1)]
+    else:
+        when = WORDS_WHEN_NOW[randint(0,len(WORDS_WHEN_NOW)-1)]
+    return "{0} {1} {2} {3}{4}".format(
+        subj,
+        verb,
+        obj,
+        how,
+        (" " + when) if how != "" else when
+    )
