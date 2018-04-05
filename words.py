@@ -87,7 +87,7 @@ def generate():
         verb = verbdict["name"]
     else:
         verb = verbdict["third"]
-    obj = WORDS_NOUN[randint(0,int(WORDS_NOUN)-1)]
+    obj = WORDS_NOUN[randint(0,len(WORDS_NOUN)-1)]
     if not randint(0,2):
         how = WORDS_HOW[randint(0,len(WORDS_HOW)-1)]
     else:
@@ -97,7 +97,7 @@ def generate():
         when = WORDS_WHEN_PAST[randint(0,len(WORDS_WHEN_PAST)-1)]
     else:
         when = WORDS_WHEN_NOW[randint(0,len(WORDS_WHEN_NOW)-1)]
-    return "{0} {1} {2} {3}{4}".format(
+    return "{0} {1} {2} {3}{4}.".format(
         subj,
         verb,
         obj,
