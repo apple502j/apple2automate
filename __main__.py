@@ -10,6 +10,7 @@ from discord.ext.commands import command
 from discord.ext.commands import bot_has_permissions
 from discord.ext import commands as c
 from aiohttp import ClientSession
+import wordsDict
 
 logfmt = logging.Formatter(
 	fmt='{asctime} {invoker}: {message}',
@@ -151,7 +152,7 @@ Send a number to guess it.""".format(limDn, limUp, tries))
 	channels_occupied = set()
 
 	@command()
-	async def hangman(self, ctx):
+	async def hangman(self, ctx, defaultWord = ""):
 		"""Yes, it's hangman!
 
 		Use this first in the server, to start the game in that channel;
@@ -162,9 +163,12 @@ Send a number to guess it.""".format(limDn, limUp, tries))
 		if ctx.channel in self.channels_occupied:
 			return await ctx.send("There is already a game going on in this channel!")
 		self.channels_occupied.add(ctx.channel)
-		await ctx.send("Awaiting DM with word...")
-		WORD = await ctx.bot.wait_for('message',
-			check=lambda m: isinstance(m.channel, d.DMChannel) and m.author == ctx.message.author)
+		if defaultWord == "":
+			await ctx.send("Awaiting DM with word...")
+			WORD = await ctx.bot.wait_for('message',
+				check=lambda m: isinstance(m.channel, d.DMChannel) and m.author == ctx.message.author)
+		else:
+			WORD = defaultWord
 		WORD = WORD.content.lower()
 		letters = ['_'] * len(WORD)
 		lowers = (
@@ -194,7 +198,14 @@ Send a number to guess it.""".format(limDn, limUp, tries))
 		else:
 			await ctx.send('You lost! The word was \"{}\".'.format(WORD))
 		self.channels_occupied.remove(ctx.channel)
-
+	
+	@command()
+	async def fungman(self,ctx):
+		hangman(self,ctx,defaultWord=wordsDict.generate())
+	@command
+	async def saytext(self,ctx):
+		ctx.send(wordsDict.generate())
+	
 	@command()
 	@bot_has_permissions(manage_messages=True)
 	async def localhangman(self, ctx):
