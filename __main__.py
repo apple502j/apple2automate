@@ -201,9 +201,15 @@ Send a number to guess it.""".format(limDn, limUp, tries))
 	
 	@command()
 	async def fungman(self,ctx):
+		"""
+		This is hangman. The text is generated automatically, and usually it's funny.
+		"""
 		hangman(self,ctx,defaultWord=wordsDict.generate())
 	@command
 	async def saytext(self,ctx):
+		"""
+		Say automatically-generated text.
+		"""
 		ctx.send(wordsDict.generate())
 	
 	@command()
