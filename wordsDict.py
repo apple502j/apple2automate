@@ -17,15 +17,16 @@ WORDS_SUBJ.append(WORDS_FIRST)
 WORDS_VERB = [
     {"name":"begin","third":"begins","past":"begun"},
     {"name":"break","third":"breaks","past":"broke"},
-    {"name":"have","third":"has","past":"had"},
-    {"name":"want","third":"wants","past":"wanted"},
-    {"name":"need","third":"needs","past":"needed"},
+    {"name":"have","third":"has","past":"had","time":False},
+    {"name":"want","third":"wants","past":"wanted","time":False},
+    {"name":"need","third":"needs","past":"needed","time":False},
     {"name":"buy","third":"buys","past":"bought"},
     {"name":"read","third":"reads","past":"read"},
+    {"name":"go to","third":"goes to","past":"went to"},
     {"name":"put","third":"puts","past":"put"},
     {"name":"sing","third":"sings","past":"sung"},
     {"name":"write","third":"writes","past":"wrote"},
-    {"name":"know","third":"knows","past":"knew"},
+    {"name":"know","third":"knows","past":"knew","time":False},
     {"name":"use","third":"uses","past":"used"},
     {"name":"make","third":"makes","past":"made"},
     {"name":"cook","third":"cooks","past":"cooked"},
@@ -95,12 +96,15 @@ def generate():
     if randint(0,1):
         verb = verbdict["past"]
         when = WORDS_WHEN_PAST[randint(0,len(WORDS_WHEN_PAST)-1)]
-    else:
+    elif verbdict.get("time",True):
         when = WORDS_WHEN_NOW[randint(0,len(WORDS_WHEN_NOW)-1)]
-    return "{0} {1} {2} {3}{4}.".format(
+    else:
+        when = ""
+    return "{0} {1} {2}{3}{4}.".format(
         subj,
         verb,
         obj,
-        how,
-        (" " + when) if how != "" else when
+        (" " + how) if how != "" else how,
+        (" " + when) if when != "" else when,
     )
+

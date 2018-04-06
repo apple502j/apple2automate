@@ -11,6 +11,8 @@ from discord.ext.commands import bot_has_permissions
 from discord.ext import commands as c
 from aiohttp import ClientSession
 import wordsDict
+import requests
+import time
 
 logfmt = logging.Formatter(
 	fmt='{asctime} {invoker}: {message}',
@@ -29,7 +31,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 logger.addHandler(handler)
 
-client = Bot(description="A testing Discord bot.", command_prefix=";")
+client = Bot(description="A testing Discord bot.", command_prefix="$")
 
 class Regexes(object):
 	"""Regex commands - Python flavored."""
@@ -199,18 +201,20 @@ Send a number to guess it.""".format(limDn, limUp, tries))
 			await ctx.send('You lost! The word was \"{}\".'.format(WORD))
 		self.channels_occupied.remove(ctx.channel)
 	
+#	@command()
+#	async def fungman(self,ctx):
+#		"""
+#		This is hangman. The text is generated automatically, and usually it's funny.
+#		"""
+#		client.invoke(ctx,self.hangman(self,ctx,defaultWord=wordsDict.generate()))
+
 	@command()
-	async def fungman(self,ctx):
-		"""
-		This is hangman. The text is generated automatically, and usually it's funny.
-		"""
-		hangman(self,ctx,defaultWord=wordsDict.generate())
-	@command
 	async def saytext(self,ctx):
 		"""
-		Say automatically-generated text.
+		Say automatically-generated text, and it's usually funny. 
 		"""
-		ctx.send(wordsDict.generate())
+		logger.info('Games.saytext', extra={'invoker': ctx.message.author.name})
+		await ctx.send(wordsDict.generate())
 	
 	@command()
 	@bot_has_permissions(manage_messages=True)
@@ -380,6 +384,9 @@ class Wiki(object):
 
 client.add_cog(Wiki(client))
 
+global TRANSLATELIMIT
+TRANSLATELIMIT=time.time() - 20
+
 class Scratch(object):
 	def __init__(self, bot):
 		self.bot = bot
@@ -391,6 +398,36 @@ class Scratch(object):
 				return None
 			else:
 				return await resp.text()
+	@staticmethod
+	def req2(url):
+		resp=requests.get(url)
+		if resp.status_code >= 400:
+			return None
+		else:
+			return resp.text
+
+	async def translater(self,ctx,lang="ja",txt=None):
+		global TRANSLATELIMIT
+		if time.time() < TRANSLATELIMIT + 20:
+			await ctx.send("You need to wait 20 seconds between translating commands!")
+			return
+		if txt == None:
+			return
+		resp=self.req2("https://translate-service.scratch.mit.edu/supported")
+		if resp == None:
+			return
+		respjson=json.loads(resp)
+		supported=map(lambda x:x["code"],respjson["result"])
+		if lang not in supported:
+			lang="ja"
+		addr="https://translate-service.scratch.mit.edu/translate?language={0}&text={1}".format(lang,txt)
+		resp=self.req2(addr)
+		if resp == None:
+			return
+		logger.info('Scratch.translater {0} {1} {2}'.format(lang,txt,addr), extra={'invoker': ctx.message.author.name})
+		await ctx.send(json.loads(resp)["result"])
+		TRANSLATELIMIT = time.time()
+		return
 
 	@command()
 	async def randomproject(self, ctx):
@@ -430,11 +467,26 @@ class Scratch(object):
 		logger.info('Scratch.news', extra={'invoker': ctx.message.author.name})
 		content = await self.req('https://api.scratch.mit.edu/news')
 		content = json.loads(content)
-		for new in content[:5]:
+		for new in content[0:5]:
 			await ctx.send(
 				'**' + new['headline'] + '**'
 				+ '\n' + new['copy'] + '\n' + new['url']
 			)
+
+
+
+	@command()
+	async def translate(self,ctx,lang="ja",txt=None):
+		""" Apple can speak many languages!
+translate <lang=ja> <text=None> """
+		await self.translater(ctx,lang,txt)
+
+	@command()
+	async def funslate(self,ctx,lang="ja"):
+		""" Translate funny text.
+funslate <lang=ja>"""
+		await self.translater(ctx,lang,wordsDict.generate())
+
 
 client.add_cog(Scratch(client))
 
@@ -443,7 +495,7 @@ async def on_ready(*_, **__):
 	global SESH
 	logger.info('Ready!', extra={'invoker': '(core)'})
 	SESH = ClientSession()
-	await client.change_presence(game=d.Game(name=';help'))
+	await client.change_presence(activity=d.Game(name=';help'))
 
 @client.command()
 async def repeat(ctx, *, arg):
@@ -463,6 +515,7 @@ async def hmmst(ctx):
 	logger.info('hmmst', extra={'invoker': ctx.message.author.name})
 	await ctx.send('hmmst')
 
+
 DGBANSERVERID = 328938947717890058
 #DGBANSERVERID = 337100820371996675
 
@@ -478,8 +531,8 @@ async def votetoban(ctx, *, user: d.Member):
 				and ctx.channel.permissions_for(member).administrator:
 			await ctx.send(member.mention + ', someone requests for ' + user.mention + ' to be banned!')
 			return
-	DOBAN = '🚫'
-	NOBAN = '😇'
+	DOBAN = '陜}ｩ'
+	NOBAN = '陜qd'
 	msg = await ctx.send('**Vote to ban ' + user.mention + '**\nReact ' + DOBAN + ' to vote to ban; react ' + NOBAN + ' to vote to keep.')
 	await msg.add_reaction(DOBAN)
 	await msg.add_reaction(NOBAN)
