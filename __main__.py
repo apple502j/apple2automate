@@ -13,6 +13,7 @@ from aiohttp import ClientSession
 import wordsDict
 import requests
 import time
+import platform
 
 logfmt = logging.Formatter(
 	fmt='{asctime} {invoker}: {message}',
@@ -516,6 +517,14 @@ async def hmmst(ctx):
 	logger.info('hmmst', extra={'invoker': ctx.message.author.name})
 	await ctx.send('hmmst')
 
+
+@client.command()
+async def whichpc(ctx):
+	""" Check which PC is running the bot."""
+	if platform.win32_ver()[0] == '7':
+		await ctx.send("My main PC (Windows 7)")
+	else:
+		await ctx.send("My mobile PC (Windows 10)")
 
 DGBANSERVERID = 328938947717890058
 #DGBANSERVERID = 337100820371996675
