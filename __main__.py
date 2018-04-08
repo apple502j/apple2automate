@@ -478,7 +478,8 @@ class Scratch(object):
 	@command()
 	async def translate(self,ctx,lang="ja",txt=None):
 		""" Apple can speak many languages!
-translate <lang=ja> <text=None> """
+translate <lang=ja> <text=None>
+Never forget to write \" before and after the text you translate! """
 		await self.translater(ctx,lang,txt)
 
 	@command()
