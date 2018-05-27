@@ -739,7 +739,7 @@ async def votetoban(ctx, *, user: d.Member):
             await ctx.send('{} votes for and {} votes against. The user stays.'.format(dos, nos))
 
 @votetoban.error
-sasync def on_votetoban_err(ctx, error):
+async def on_votetoban_err(ctx, error):
     logger.error('votetoban failed: ' + str(error), extra={'invoker': ctx.message.author.name})
     if isinstance(error, c.BotMissingPermissions):
         await ctx.send(str(error))
