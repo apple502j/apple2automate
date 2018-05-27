@@ -15,7 +15,59 @@ import requests
 import time
 import platform
 import minesweeper
+import secret
+import threading
+import os
 
+global ALERT_USERS
+ALERT_USERS={}
+global WARNING_USERS
+WARNING_USERS={}
+async def bMsg(ctx,user,client):
+    logger.info('Block Checker:'+user, extra={'invoker': ctx.message.author.name})
+    if secret.isBlocked(user):
+        if ctx.author.dm_channel is None:
+            await ctx.author.create_dm()
+        await ctx.author.dm_channel.send("You have been blocked! Please send apple502j DM if you want to be unblocked.")
+        await ctx.message.delete()
+        logger.info('Blocked:'+user, extra={'invoker': ctx.message.author.name})
+        return True
+    else:
+        return False
+
+async def alertMsg(ctx,user,reason,client):
+    global ALERT_USERS
+    logger.info('Alert:'+user+' Reason:'+reason, extra={'invoker': ctx.message.author.name})
+    if ctx.author.dm_channel is None:
+            await ctx.author.create_dm()
+    await ctx.author.dm_channel.send("Alert:"+reason)
+    secret.setWarnType(user,"alert")
+    if user not in ALERT_USERS.keys():
+        ALERT_USERS[user] = 1
+    elif ALERT_USERS[user] == 2:
+        secret.setWarnType(user,"block")
+        ALERT_USERS[user] = 0
+    else:
+        ALERT_USERS[user] = ALERT_USERS[user] + 1
+
+async def warnMsg(ctx,user,reason,client):
+    global WARNING_USERS
+    global ALERT_USERS
+    if user in ALERT_USERS.keys():
+        await alertMsg(ctx,user,reason,client)
+    logger.info('Warning:'+user+' Reason:'+reason, extra={'invoker': ctx.message.author.name})
+    if ctx.author.dm_channel is None:
+            await ctx.author.create_dm()
+    await ctx.author.dm_channel.send("Warning:"+reason)
+    secret.setWarnType(user,"warning")
+    if user not in WARNING_USERS.keys():
+        WARNING_USERS[user] = 1
+    elif WARNING_USERS[user] == 2:
+        await alertMsg(ctx,user,reason,client)
+        WARNING_USERS[user] = 0
+    else:
+        WARNING_USERS[user] = WARNING_USERS[user] + 1
+        
 logfmt = logging.Formatter(
     fmt='{asctime} {invoker}: {message}',
     datefmt='%Y-%m-%dT%H:%M:%SZ',
@@ -33,7 +85,52 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 logger.addHandler(handler)
 
+secret.clearAllWarnings()
+
 client = Bot(description="A testing Discord bot.", command_prefix="$")
+
+@client.command()
+async def ban(msg,whotoban):
+    if msg.author.name != "apple502j":
+        pass
+    else:
+        secret.setWarnType(whotoban,"block")
+    await msg.delete()
+
+@client.command()
+async def unban(msg,whotounban):
+    if msg.author.name != "apple502j":
+        pass
+    else:
+        secret.setWarnType(whotounban,"block",remove=True)
+    await msg.delete()
+
+
+@client.command()
+async def say(ctx):
+    """For owner"""
+    if ctx.message.author.name != "apple502j":
+        return
+    await ctx.message.delete()
+    await ctx.send(input("What to say >"))
+
+@client.command()
+async def clear(ctx):
+    """ CLEAR! """
+    await ctx.send('_' + ('\n' * 40) + 'Clear!')
+
+@client.command()
+async def botinfo(ctx,infonum):
+    """ Bot Info """
+    try:
+        info_txt_f=open(os.getcwd() + "\\info\\" + infonum + ".txt","r")
+    except:
+        await ctx.send("botinfo -1: I can't find the file!")
+        return
+    await ctx.send(info_txt_f.read())
+    info_txt_f.close()
+
+
 
 class Regexes(object):
     """Regex commands - Python flavored."""
@@ -43,6 +140,8 @@ class Regexes(object):
     @command()
     async def search(self, ctx, pattern, string, flags=None):
         """Make a Python-flavored regex search! All groups are shown."""
+        if await bMsg(ctx,ctx.message.author.name,client):
+            return
         logger.info('Regexes.search: \"' + '\" \"'.join((pattern, string, flags)) + '\"', extra={'invoker': ctx.message.author.name})
         if flags is not None:
             exp = '(?' + flags.lower().replace('l', 'L') + ')(?:' + pattern + ')'
@@ -66,6 +165,8 @@ class Regexes(object):
     @command()
     async def findall(self, ctx, pattern, string, flags=None):
         """Use a Python-flavor regex to find all occurences of a pattern!"""
+        if await bMsg(ctx,ctx.message.author.name,client):
+            return
         logger.info('Regexes.findall: \"' + '\" \"'.join((pattern, string, flags)) + '\"', extra={'invoker': ctx.message.author.name})
         if flags is not None:
             exp = '(?' + flags.lower().replace('l', 'L') + ')(?:' + pattern + ')'
@@ -111,6 +212,8 @@ class Games(object):
     @command()
     async def numguess(self, ctx):
         """Play a fun number-guessing game!"""
+        if await bMsg(ctx,ctx.message.author.name,client):
+            return
         logger.info('Games.numguess', extra={'invoker': ctx.message.author.name})
         guess = None
         limDn = 0
@@ -162,6 +265,8 @@ Send a number to guess it.""".format(limDn, limUp, tries))
         Answer is (column)(space)(row) like 5 2.
         ? is unknown, _ is nothing, and X is mine.
         """
+        if await bMsg(ctx,ctx.message.author.name,client):
+            return
         logger.info('Games.minesweeper', extra={'invoker': ctx.message.author.name})
         if ctx.channel in self.channels_occupied_mine:
             return await ctx.send("There is already a game going on in this channel!")
@@ -176,6 +281,8 @@ Send a number to guess it.""".format(limDn, limUp, tries))
         Next, send the word in a DM with the bot, to set it.
         Once that's been done, guess a letter by sending it.
         """
+        if await bMsg(ctx,ctx.message.author.name,client):
+            return
         logger.info('Games.hangman', extra={'invoker': ctx.message.author.name})
         if ctx.channel in self.channels_occupied_hangman:
             return await ctx.send("There is already a game going on in this channel!")
@@ -228,6 +335,8 @@ Send a number to guess it.""".format(limDn, limUp, tries))
         """
         Say automatically-generated text, and it's usually funny. 
         """
+        if await bMsg(ctx,ctx.message.author.name,client):
+            return
         logger.info('Games.saytext', extra={'invoker': ctx.message.author.name})
         await ctx.send(wordsDict.generate())
     
@@ -240,6 +349,8 @@ Send a number to guess it.""".format(limDn, limUp, tries))
         send the word to set it,
         then send letters to guess them.
         """
+        if await bMsg(ctx,ctx.message.author.name,client):
+            return
         logger.info('Games.localhangman', extra={'invoker': ctx.message.author.name})
         if ctx.channel in self.channels_occupied:
             await ctx.send('There is already a game going on in this channel!')
@@ -302,6 +413,8 @@ class Wiki(object):
     @command()
     async def page(self, ctx, *, title):
         """Get the contents of a page."""
+        if await bMsg(ctx,ctx.message.author.name,client):
+            return
         logger.info('Wiki.page: ' + title, extra={'invoker': ctx.message.author.name})
         async with ctx.channel.typing():
             try:
@@ -334,6 +447,8 @@ class Wiki(object):
     @command()
     async def recentchanges(self, ctx, limit=50):
         """Get recent changes on the Wiki."""
+        if await bMsg(ctx,ctx.message.author.name,client):
+            return
         logger.info('Wiki.recentchanges: ' + str(limit), extra={'invoker': ctx.message.author.name})
         twenties, limit = divmod(limit, 20)
         async with ctx.channel.typing():
@@ -385,6 +500,8 @@ class Wiki(object):
     @command()
     async def randompage(self, ctx):
         """Get a link to a random Wiki page!"""
+        if await bMsg(ctx,ctx.message.author.name,client):
+            return
         logger.info('Wiki.randompage', extra={'invoker': ctx.message.author.name})
         rn = await self.req({
             'action': 'query',
@@ -425,6 +542,7 @@ class Scratch(object):
         global TRANSLATELIMIT
         if time.time() < TRANSLATELIMIT + 20:
             await ctx.send("You need to wait 20 seconds between translating commands!")
+            await warnMsg(ctx,ctx.message.author.name,"Please don't use translate commands so quickly.",client)
             return
         if txt == None:
             return
@@ -447,6 +565,8 @@ class Scratch(object):
     @command()
     async def randomproject(self, ctx):
         """Get a random project link!"""
+        if await bMsg(ctx,ctx.message.author.name,client):
+            return
         logger.info('Scratch.randomproject', extra={'invoker': ctx.message.author.name})
         async with ctx.channel.typing():
             count = json.loads(await self.req('https://api.scratch.mit.edu/projects/count/all'))['count']
@@ -459,6 +579,8 @@ class Scratch(object):
     @command()
     async def messagecount(self, ctx, name=None):
         """How many messages do you have on Scratch?"""
+        if await bMsg(ctx,ctx.message.author.name,client):
+            return
         async with ctx.channel.typing():
             username = name
             if username is None:
@@ -479,6 +601,8 @@ class Scratch(object):
     @command()
     async def news(self, ctx):
         """Get Scratch news."""
+        if await bMsg(ctx,ctx.message.author.name,client):
+            return
         logger.info('Scratch.news', extra={'invoker': ctx.message.author.name})
         content = await self.req('https://api.scratch.mit.edu/news')
         content = json.loads(content)
@@ -495,12 +619,16 @@ class Scratch(object):
         """ Apple can speak many languages!
 translate <lang=ja> <text=None>
 Never forget to write \" before and after the text you translate! """
+        if await bMsg(ctx,ctx.message.author.name,client):
+            return
         await self.translater(ctx,lang,txt)
 
     @command()
     async def funslate(self,ctx,lang="ja"):
         """ Translate funny text.
 funslate <lang=ja>"""
+        if await bMsg(ctx,ctx.message.author.name,client):
+            return
         await self.translater(ctx,lang,wordsDict.generate())
 
 
@@ -511,23 +639,29 @@ async def on_ready(*_, **__):
     global SESH
     logger.info('Ready!', extra={'invoker': '(core)'})
     SESH = ClientSession()
-    await client.change_presence(activity=d.Game(name=';help'))
+    await client.change_presence(activity=d.Game(name="Help is:$help"))
 
 @client.command()
 async def repeat(ctx, *, arg):
     """Repeat what you say, right back at ya."""
+    if await bMsg(ctx,ctx.message.author.name,client):
+            return
     logger.info('repeat: ' + arg, extra={'invoker': ctx.message.author.name})
     await ctx.send(arg)
 
 @client.command()
 async def hello(ctx):
     """Test whether the bot is running! Simply says "Hello World!"."""
+    if await bMsg(ctx,ctx.message.author.name,client):
+            return
     logger.info('Hello World!', extra={'invoker': ctx.message.author.name})
     await ctx.send('Hello World!')
 
 @client.command()
 async def hmmst(ctx):
     """hmmst"""
+    if await bMsg(ctx,ctx.message.author.name,client):
+            return
     logger.info('hmmst', extra={'invoker': ctx.message.author.name})
     await ctx.send('hmmst')
 
@@ -535,10 +669,23 @@ async def hmmst(ctx):
 @client.command()
 async def whichpc(ctx):
     """ Check which PC is running the bot."""
+    if await bMsg(ctx,ctx.message.author.name,client):
+            return
     if platform.win32_ver()[0] == '7':
         await ctx.send("My main PC (Windows 7)")
     else:
         await ctx.send("My mobile PC (Windows 10)")
+
+@client.command()
+async def mine(ctx):
+    """Shortcut of minesweeper."""
+    if await bMsg(ctx,ctx.message.author.name,client):
+            return
+    await ctx.send('Hey, this command is **mine**!')
+
+@client.command()
+async def whoami(ctx):
+    await ctx.send(ctx.message.author.name)
 
 DGBANSERVERID = 328938947717890058
 #DGBANSERVERID = 337100820371996675
@@ -547,6 +694,8 @@ DGBANSERVERID = 328938947717890058
 @bot_has_permissions(ban_members=True, add_reactions=True, read_message_history=True)
 async def votetoban(ctx, *, user: d.Member):
     """Start a vote to ban someone from the server. Abuse results in a ban."""
+    if await bMsg(ctx,ctx.message.author.name,client):
+            return
     logger.info('votetoban: ' + user.mention, extra={'invoker': ctx.message.author.name})
     if ctx.guild.id != DGBANSERVERID:
         return
@@ -590,16 +739,19 @@ async def votetoban(ctx, *, user: d.Member):
             await ctx.send('{} votes for and {} votes against. The user stays.'.format(dos, nos))
 
 @votetoban.error
-async def on_votetoban_err(ctx, error):
+sasync def on_votetoban_err(ctx, error):
     logger.error('votetoban failed: ' + str(error), extra={'invoker': ctx.message.author.name})
     if isinstance(error, c.BotMissingPermissions):
         await ctx.send(str(error))
     else:
         raise error
 
-print('Defined stuff')
 
-with open('login.txt') as f:
-    token = f.read().strip()
+if True:
+    print('Defined stuff')
 
-client.run(token)
+    with open('login.txt') as f:
+        token = f.read().strip()
+
+    client.run(token)
+
